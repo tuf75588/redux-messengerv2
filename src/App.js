@@ -1,6 +1,7 @@
 import React from 'react';
-import { createStore } from 'redux';
 import uuid from 'uuid';
+import { createStore } from 'redux';
+
 function reducer(state, action) {
   if (action.type === 'ADD_MESSAGE') {
     const newMessage = {
@@ -8,22 +9,53 @@ function reducer(state, action) {
       timestamp: Date.now(),
       id: uuid.v4()
     };
+    const threadIndex = state.threads.findIndex((t) => t.id === action.threadId);
+    //! reference to active thread in prior state.
+    const oldThread = state.threads[threadIndex];
+    const newThread = {
+      ...oldThread,
+      messages: oldThread.messages.concat(newMessage)
+    };
     return {
-      messages: state.messages.concat(newMessage)
+      ...state,
+      threads: [
+        ...state.threads.slice(0, threadIndex),
+        newThread,
+        ...state.threads.slice(threadIndex + 1, state.threads.length)
+      ]
     };
   } else if (action.type === 'DELETE_MESSAGE') {
     return {
-      messages: [
-        ...state.messages.slice(0, action.index),
-        ...state.messages.slice(action.index + 1, state.messages.length)
-      ]
+      messages: state.messages.filter((m) => m.id !== action.id)
     };
   } else {
     return state;
   }
 }
 
-const initialState = { messages: [] };
+const initialState = {
+  activeThreadId: '1-fca2', // New state property
+  threads: [
+    // Two threads in state
+    {
+      id: '1-fca2', // hardcoded pseudo-UUID
+      title: 'Buzz Aldrin',
+      messages: [
+        {
+          // This thread starts with a single message already
+          text: 'Twelve minutes to ignition.',
+          timestamp: Date.now(),
+          id: uuid.v4()
+        }
+      ]
+    },
+    {
+      id: '2-be91',
+      title: 'Michael Collins',
+      messages: []
+    }
+  ]
+};
 
 const store = createStore(reducer, initialState);
 
@@ -33,12 +65,19 @@ class App extends React.Component {
   }
 
   render() {
-    const messages = store.getState().messages;
+    const state = store.getState();
+    const activeThreadId = state.activeThreadId;
+    const threads = state.threads;
+    const activeThread = threads.find((t) => t.id === activeThreadId);
+    const tabs = threads.map((t, i) => ({
+      title: t.title,
+      active: t.id === activeThreadId
+    }));
 
     return (
       <div className="ui segment">
-        <MessageView messages={messages} />
-        <MessageInput />
+        <ThreadTabs tabs={tabs} />
+        <Thread thread={activeThread} />
       </div>
     );
   }
@@ -58,7 +97,8 @@ class MessageInput extends React.Component {
   handleSubmit = () => {
     store.dispatch({
       type: 'ADD_MESSAGE',
-      message: this.state.value
+      text: this.state.value,
+      threadId: this.props.threadId
     });
     this.setState({
       value: ''
@@ -77,26 +117,41 @@ class MessageInput extends React.Component {
   }
 }
 
-class MessageView extends React.Component {
-  handleClick = (index) => {
+class Thread extends React.Component {
+  handleClick = (id) => {
     store.dispatch({
       type: 'DELETE_MESSAGE',
-      index: index
+      id: id
     });
   };
 
   render() {
-    const messages = this.props.messages.map((message, index) => (
-      <div className="comment" key={index} onClick={() => this.handleClick(index)}>
-        {message}
+    const messages = this.props.thread.messages.map((message, index) => (
+      <div className="comment" key={index} onClick={() => this.handleClick(message.id)}>
+        <div className="text">
+          {message.text}
+          <span className="metadata">@{message.timestamp}</span>
+        </div>
       </div>
     ));
     return (
       <div className="ui center aligned basic segment">
         <div className="ui comments">{messages}</div>
+        <MessageInput threadId={this.props.thread.id} />
       </div>
     );
   }
 }
+
+const ThreadTabs = (props) => {
+  const tabs = props.tabs.map((tab, index) => {
+    return (
+      <div className={tab.active ? 'active item' : 'item'} key={index}>
+        {tab.title}
+      </div>
+    );
+  });
+  return <div className="ui top attached tabular menu">{tabs}</div>;
+};
 
 export default App;
