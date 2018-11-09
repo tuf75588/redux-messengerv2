@@ -3,47 +3,51 @@ import uuid from 'uuid';
 import { createStore } from 'redux';
 
 function reducer(state, action) {
+  return {
+    activeThreadId: activeThreadIdReducer(state.activeThreadId, action),
+    threads: threadsReducer(state.threads, action)
+  };
+}
+
+//! Responsible for managing which thread in the application is "active"
+function activeThreadIdReducer(state, action) {
+  if (action.type === 'OPEN_THREAD') {
+    return action.id;
+  } else {
+    return state;
+  }
+}
+
+//! Responsible for managing messages in the thread
+function threadsReducer(state, action) {
+  switch (action.type) {
+    case 'ADD_MESSAGE':
+    case 'DELETE_MESSAGE': {
+      const threadIndex = findThreadIndex(state, action);
+      const oldThread = state[threadIndex];
+      const newThread = { ...oldThread, messages: messagesReducer(oldThread.messages, action) };
+      return [...state.slice(0, threadIndex), newThread, ...state.slice(threadIndex + 1, state.length)];
+    }
+    default: {
+      return state;
+    }
+  }
+}
+// TODO 1. Message Reducer will create new message array. 2. Return a new array with the new message appended at the end of it.
+function messagesReducer(state, action) {
   if (action.type === 'ADD_MESSAGE') {
     const newMessage = {
       text: action.text,
       timestamp: Date.now(),
       id: uuid.v4()
     };
-    const threadIndex = state.threads.findIndex((t) => t.id === action.threadId);
-    //! reference to active thread in prior state.
-    const oldThread = state.threads[threadIndex];
-    const newThread = {
-      ...oldThread,
-      messages: oldThread.messages.concat(newMessage)
-    };
     return {
-      ...state,
-      threads: [
-        ...state.threads.slice(0, threadIndex),
-        newThread,
-        ...state.threads.slice(threadIndex + 1, state.threads.length)
-      ]
-    };
-  } else if (action.type === 'DELETE_MESSAGE') {
-    const threadIndex = state.threads.findIndex((t) => t.messages.find((m) => m.id === action.id));
-    const oldThread = state.threads[threadIndex];
-    const newThread = {
-      ...oldThread,
-      messages: oldThread.messages.filter((m) => m.id !== action.id)
-    };
-    return {
-      ...state,
-      threads: [
-        ...state.threads.slice(0, threadIndex),
-        newThread,
-        ...state.threads.slice(threadIndex + 1, state.threads.length)
-      ]
+      messages: state.concat(newMessage)
     };
   } else {
     return state;
   }
 }
-
 const initialState = {
   activeThreadId: '1-fca2', // New state property
   threads: [
@@ -68,6 +72,17 @@ const initialState = {
   ]
 };
 
+function findThreadIndex(threads, action) {
+  switch (action.type) {
+    case 'ADD_MESSAGE':
+      return threads.findIndex((t) => t.id === action.threadId);
+    case 'DELETE_MESSAGE':
+      return threads.findIndex((t) => t.messages.find((m) => m.id === action.id));
+    default:
+      return threads;
+  }
+}
+
 const store = createStore(reducer, initialState);
 
 class App extends React.Component {
@@ -82,7 +97,8 @@ class App extends React.Component {
     const activeThread = threads.find((t) => t.id === activeThreadId);
     const tabs = threads.map((t, i) => ({
       title: t.title,
-      active: t.id === activeThreadId
+      active: t.id === activeThreadId,
+      id: t.id
     }));
 
     return (
@@ -155,9 +171,10 @@ class Thread extends React.Component {
 }
 
 const ThreadTabs = (props) => {
+  const handleClick = (id) => store.dispatch({ type: 'OPEN_THREAD', id: id });
   const tabs = props.tabs.map((tab, index) => {
     return (
-      <div className={tab.active ? 'active item' : 'item'} key={index}>
+      <div className={tab.active ? 'active item' : 'item'} key={index} onClick={() => handleClick(tab.id)}>
         {tab.title}
       </div>
     );
