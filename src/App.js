@@ -21,7 +21,32 @@ function reducer(state, action) {
     return state;
   }
 }
-const initialState = { messages: [] };
+const initialState = {
+  //! keep track of which thread is currently "active" in the view
+  activeThreadId: '1-fca2',
+  threads: [
+    {
+      //! individual threadId which for now is a hardcoded pseudo-id
+      id: '1-fca2',
+      //! title of user who conversation is with in the current thread.
+      title: 'Andrew Davis',
+      //! messages metadata which includes the messages themselves, along with a timestamp and unique identifier.
+      messages: [
+        {
+          text: 'Test from the chat application v2 with redux',
+          timestamp: Date.now(),
+          id: uuid.v4()
+        }
+      ]
+    },
+    //! new thread object separate from our first.
+    {
+      id: '2-be91',
+      title: 'Buzz Aldrin',
+      messages: []
+    }
+  ]
+};
 const store = createStore(reducer, initialState);
 
 class App extends React.Component {
@@ -29,11 +54,25 @@ class App extends React.Component {
     store.subscribe(() => this.forceUpdate());
   }
   render() {
-    const messages = store.getState().messages;
+    //! new declaration of store subscription
+    const state = store.getState();
+    //! value of our current active thread.
+    const activeThreadId = state.activeThreadId;
+    //! our newly created threads array.
+    const threads = state.threads;
+    //! running a find higher order function, to find which individual thread matches our states top level activethreadId property.
+    const activeThread = threads.find((thread) => thread.id === activeThreadId);
+    //! tabs object for each thread (including active) in our application
+    const tabs = threads.map((t) => ({
+      title: t.title,
+      // TODO active property is for styling purposes.
+      active: t.id === activeThreadId
+    }));
+    console.log(state);
     return (
-      <div className="ui segment">
-        <MessageView messages={messages} />
-        <MessageInput />
+      <div className='ui segment'>
+        <ThreadTabs tabs={tabs} />
+        <Thread thread={activeThread} />
       </div>
     );
   }
@@ -60,16 +99,16 @@ class MessageInput extends React.Component {
   };
   render() {
     return (
-      <div className="ui input">
-        <input type="text" value={this.state.value} name="value" onChange={this.handleInputChange} />
-        <button className="ui primary button" onClick={this.handleSubmit} type="submit">
+      <div className='ui input'>
+        <input type='text' value={this.state.value} name='value' onChange={this.handleInputChange} />
+        <button className='ui primary button' onClick={this.handleSubmit} type='submit'>
           Submit Message
         </button>
       </div>
     );
   }
 }
-class MessageView extends React.Component {
+class Thread extends React.Component {
   handleClick = (id) => {
     store.dispatch({
       type: 'DELETE_MESSAGE',
@@ -77,20 +116,40 @@ class MessageView extends React.Component {
     });
   };
   render() {
-    //! messages referes to each individual message object with the properties of "text,id,and timestamp attached to it"
-    const messages = this.props.messages.map((message, index) => {
+    //! updated messages variable to reflect our states new thread based paradigm.
+    const messages = this.props.thread.messages.map((message, index) => {
       return (
-        <div className="comment" key={index} onClick={() => this.handleClick(message.id)}>
-          <div className="text">
+        <div className='comment' key={index} onClick={() => this.handleClick(message.id)}>
+          <div className='text'>
             {message.text}
             {` `}
-            <span className="metadata">@{message.timestamp}</span>
+            <span className='metadata'>@{message.timestamp}</span>
           </div>
         </div>
       );
     });
-    return <div className="ui comments">{messages}</div>;
+    return (
+      <div className='ui comments'>
+        {messages}
+        <div>
+          <MessageInput />
+        </div>
+      </div>
+    );
   }
 }
+
+const ThreadTabs = (props) => {
+  //! we will render a new tab view for each thread in our chat app through props from App
+  const tabs = props.tabs.map((tab, index) => {
+    return (
+      <div className={tab.active ? 'active item' : 'item'} key={index}>
+        {/* title is coming from each tab objects "title" property specifying the chat recipients name */}
+        {tab.title}
+      </div>
+    );
+  });
+  return <div className='ui top attached tabular menu'>{tabs}</div>;
+};
 
 export default App;
