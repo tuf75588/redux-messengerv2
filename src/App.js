@@ -8,8 +8,21 @@ function reducer(state, action) {
       timestamp: Date.now(),
       id: uuid.v4()
     };
+    //! finding the corresponding threadId that matches the id of our incoming ADD_MESSAGE action
+    const threadIndex = state.threads.findIndex((t) => t.id === action.id);
+    const oldThread = state.threads[threadIndex];
+    const newThread = {
+      ...oldThread,
+      messages: oldThread.messages.concat(newMessage)
+    };
+    //! create new object with original state spread in before updating
     return {
-      messages: state.messages.concat(newMessage)
+      ...state,
+      threads: [
+        ...state.threads.slice(0, threadIndex),
+        newThread,
+        ...state.threads.slice(threadIndex + 1, state.threads.length)
+      ]
     };
   } else if (action.type === 'DELETE_MESSAGE') {
     return {
@@ -68,7 +81,7 @@ class App extends React.Component {
       // TODO active property is for styling purposes.
       active: t.id === activeThreadId
     }));
-    console.log(state);
+
     return (
       <div className='ui segment'>
         <ThreadTabs tabs={tabs} />
