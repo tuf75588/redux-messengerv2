@@ -9,7 +9,7 @@ function reducer(state, action) {
       id: uuid.v4()
     };
     //! finding the corresponding threadId that matches the id of our incoming ADD_MESSAGE action
-    const threadIndex = state.threads.findIndex((t) => t.id === action.id);
+    const threadIndex = state.threads.findIndex((t) => t.id === action.threadId);
     const oldThread = state.threads[threadIndex];
     const newThread = {
       ...oldThread,
@@ -39,7 +39,7 @@ const initialState = {
   activeThreadId: '1-fca2',
   threads: [
     {
-      //! individual threadId which for now is a hardcoded pseudo-id
+      //! individual threadId which for now is a hard coded pseudo-id
       id: '1-fca2',
       //! title of user who conversation is with in the current thread.
       title: 'Andrew Davis',
@@ -101,10 +101,11 @@ class MessageInput extends React.Component {
       [name]: value
     }));
   };
-  handleSubmit = () => {
+  handleSubmit = (id) => {
     store.dispatch({
       type: 'ADD_MESSAGE',
-      text: this.state.value
+      text: this.state.value,
+      threadId: this.props.threadId
     });
     this.setState(() => ({
       value: ''
@@ -129,6 +130,7 @@ class Thread extends React.Component {
     });
   };
   render() {
+    console.log(this.props);
     //! updated messages variable to reflect our states new thread based paradigm.
     const messages = this.props.thread.messages.map((message, index) => {
       return (
@@ -145,7 +147,7 @@ class Thread extends React.Component {
       <div className='ui comments'>
         {messages}
         <div>
-          <MessageInput />
+          <MessageInput threadId={this.props.thread.id} />
         </div>
       </div>
     );
