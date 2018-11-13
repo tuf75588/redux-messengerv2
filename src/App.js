@@ -25,10 +25,16 @@ function reducer(state, action) {
       ]
     };
   } else if (action.type === 'DELETE_MESSAGE') {
+    const threadIndex = state.threads.findIndex((t) => t.messages.find((m) => m.id === action.id));
+    const oldThread = state.threads[threadIndex];
+    const newThread = { ...oldThread, messages: oldThread.messages.filter((m) => m.id !== action.id) };
     return {
-      //! looks for message that does not equal the given action.id
-      //! Here,we’re building a new array containing every object that does not have an id that corresponds to the action’s id.
-      messages: state.messages.filter((message) => message.id !== action.id)
+      ...state,
+      threads: [
+        ...state.threads.slice(0, threadIndex),
+        newThread,
+        ...state.threads.slice(threadIndex + 1, state.threads.length)
+      ]
     };
   } else {
     return state;
@@ -130,7 +136,6 @@ class Thread extends React.Component {
     });
   };
   render() {
-    console.log(this.props);
     //! updated messages variable to reflect our states new thread based paradigm.
     const messages = this.props.thread.messages.map((message, index) => {
       return (
