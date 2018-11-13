@@ -36,6 +36,11 @@ function reducer(state, action) {
         ...state.threads.slice(threadIndex + 1, state.threads.length)
       ]
     };
+  } else if (action.type === 'OPEN_THREAD') {
+    return {
+      ...state,
+      activeThreadId: action.id
+    };
   } else {
     return state;
   }
@@ -85,7 +90,8 @@ class App extends React.Component {
     const tabs = threads.map((t) => ({
       title: t.title,
       // TODO active property is for styling purposes.
-      active: t.id === activeThreadId
+      active: t.id === activeThreadId,
+      id: t.id
     }));
 
     return (
@@ -161,9 +167,11 @@ class Thread extends React.Component {
 
 const ThreadTabs = (props) => {
   //! we will render a new tab view for each thread in our chat app through props from App
+  //! openthread variable handles switching between different thread views based on the passed in id
+  const handleClick = (id) => store.dispatch({ type: 'OPEN_THREAD', id: id });
   const tabs = props.tabs.map((tab, index) => {
     return (
-      <div className={tab.active ? 'active item' : 'item'} key={index}>
+      <div className={tab.active ? 'active item' : 'item'} key={index} onClick={() => handleClick(tab.id)}>
         {/* title is coming from each tab objects "title" property specifying the chat recipients name */}
         {tab.title}
       </div>
