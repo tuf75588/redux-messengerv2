@@ -1,49 +1,13 @@
 import React from 'react';
 import { createStore } from 'redux';
+import { activeThreadIdReducer, threadsReducer } from './reducers/threadsReducers';
 import uuid from 'uuid';
 function reducer(state, action) {
-  if (action.type === 'ADD_MESSAGE') {
-    const newMessage = {
-      text: action.text,
-      timestamp: Date.now(),
-      id: uuid.v4()
-    };
-    //! finding the corresponding threadId that matches the id of our incoming ADD_MESSAGE action
-    const threadIndex = state.threads.findIndex((t) => t.id === action.threadId);
-    const oldThread = state.threads[threadIndex];
-    const newThread = {
-      ...oldThread,
-      messages: oldThread.messages.concat(newMessage)
-    };
-    //! create new object with original state spread in before updating
-    return {
-      ...state,
-      threads: [
-        ...state.threads.slice(0, threadIndex),
-        newThread,
-        ...state.threads.slice(threadIndex + 1, state.threads.length)
-      ]
-    };
-  } else if (action.type === 'DELETE_MESSAGE') {
-    const threadIndex = state.threads.findIndex((t) => t.messages.find((m) => m.id === action.id));
-    const oldThread = state.threads[threadIndex];
-    const newThread = { ...oldThread, messages: oldThread.messages.filter((m) => m.id !== action.id) };
-    return {
-      ...state,
-      threads: [
-        ...state.threads.slice(0, threadIndex),
-        newThread,
-        ...state.threads.slice(threadIndex + 1, state.threads.length)
-      ]
-    };
-  } else if (action.type === 'OPEN_THREAD') {
-    return {
-      ...state,
-      activeThreadId: action.id
-    };
-  } else {
-    return state;
-  }
+  return {
+    // these new properties are only passed the part of our state they are concerned with, before we had to take into consideration our entire state tree.
+    activeThreadId: activeThreadIdReducer(state.activeThreadId, action),
+    threads: threadsReducer(state.threads, action)
+  };
 }
 const initialState = {
   //! keep track of which thread is currently "active" in the view
@@ -80,10 +44,12 @@ class App extends React.Component {
   render() {
     //! new declaration of store subscription
     const state = store.getState();
+
     //! value of our current active thread.
     const activeThreadId = state.activeThreadId;
     //! our newly created threads array.
     const threads = state.threads;
+    console.log(threads);
     //! running a find higher order function, to find which individual thread matches our states top level activethreadId property.
     const activeThread = threads.find((thread) => thread.id === activeThreadId);
     //! tabs object for each thread (including active) in our application
