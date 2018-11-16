@@ -2,7 +2,7 @@ import React from 'react';
 import { createStore } from 'redux';
 import { activeThreadIdReducer, threadsReducer } from './reducers/threadsReducers';
 import uuid from 'uuid';
-function reducer(state, action) {
+function reducer(state = {}, action) {
   return {
     // these new properties are only passed the part of our state they are concerned with, before we had to take into consideration our entire state tree.
     activeThreadId: activeThreadIdReducer(state.activeThreadId, action),
@@ -35,7 +35,7 @@ const initialState = {
     }
   ]
 };
-const store = createStore(reducer, initialState);
+const store = createStore(reducer);
 
 class App extends React.Component {
   componentDidMount() {
