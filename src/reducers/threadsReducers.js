@@ -12,12 +12,12 @@ export function threadsReducer(
     {
       id: '1-fca2',
       title: 'Andrew Davis',
-      messages: messageReducer(undefined, {})
+      messages: messagesReducer(undefined, {})
     },
     {
       id: '2-be91',
       title: 'Michael Collins',
-      messages: messageReducer(undefined, {})
+      messages: messagesReducer(undefined, {})
     }
   ],
   action
@@ -29,15 +29,15 @@ export function threadsReducer(
       const oldThread = state[threadIndex];
       const newThread = {
         ...oldThread,
-        messages: messageReducer(oldThread.messages, action)
+        messages: messagesReducer(oldThread.messages, action)
       };
-      return [...state.slice(0, threadIndex + 1), newThread, ...state.slice(threadIndex + 1, state.length)];
+      return [...state.slice(0, threadIndex), newThread, ...state.slice(threadIndex + 1, state.length)];
     }
     default:
       return state;
   }
 }
-export function messageReducer(state, action) {
+export function messagesReducer(state = [], action) {
   switch (action.type) {
     case 'ADD_MESSAGE':
       const newMessage = {
@@ -48,8 +48,9 @@ export function messageReducer(state, action) {
       return state.concat(newMessage);
     case 'DELETE_MESSAGE':
       return state.filter((m) => m.id !== action.id);
-    default:
+    default: {
       return state;
+    }
   }
 }
 function findThreadIndex(threads, action) {
