@@ -130,19 +130,32 @@ class Thread extends React.Component {
   }
 }
 
-const ThreadTabs = (props) => {
-  //! we will render a new tab view for each thread in our chat app through props from App
-  //! openthread variable handles switching between different thread views based on the passed in id
-  const handleClick = (id) => store.dispatch({ type: 'OPEN_THREAD', id: id });
-  const tabs = props.tabs.map((tab, index) => {
-    return (
-      <div className={tab.active ? 'active item' : 'item'} key={index} onClick={() => handleClick(tab.id)}>
-        {/* title is coming from each tab objects "title" property specifying the chat recipients name */}
-        {tab.title}
-      </div>
-    );
-  });
-  return <div className='ui top attached tabular menu'>{tabs}</div>;
+const Tabs = (props) => {
+  return (
+    <div className='ui top attached tabular menu'>
+      {props.tabs.map((tab, index) => (
+        <div key={index} className={tab.active ? 'active item' : 'item'} onClick={() => props.onClick(tab.id)}>
+          {tab.title}
+        </div>
+      ))}
+    </div>
+  );
 };
+
+//refactor to container component
+class ThreadTabs extends React.Component {
+  componentDidMount() {
+    store.subscribe(() => this.forceUpdate());
+  }
+  render() {
+    const state = store.getState();
+    const tabs = state.threads.map((t) => ({
+      title: t.title,
+      id: t.id,
+      active: t.id === state.activeThreadId
+    }));
+    return <Tabs tabs={tabs} onClick={(id) => store.dispatch({ type: 'OPEN_THREAD', id: id })} />;
+  }
+}
 
 export default App;
